@@ -25,7 +25,7 @@
 						},
 						"datasetParameters": {
 							"SQL": {
-								"SQLTableName": "account"
+								"SQLTableName": "product"
 							}
 						}
 					},
@@ -35,7 +35,7 @@
 					},
 					"traceLevel": "Fine",
 					"continuationSettings": {
-						"customizedCheckpointKey": "653b77f1-bbe3-4e36-a234-92dcaed1211b"
+						"customizedCheckpointKey": "8d02f17a-8e19-422b-94de-b046a916a8cc"
 					}
 				}
 			}
