@@ -1,0 +1,344 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "synapsepocdatafactory"
+		},
+		"AzureSqlDatabase_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureSqlDatabase'"
+		},
+		"DataverseDataLake_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'DataverseDataLake'"
+		},
+		"Dynamics1_servicePrincipalCredential": {
+			"type": "secureString",
+			"metadata": "Secure string for 'servicePrincipalCredential' of 'Dynamics1'"
+		},
+		"DataverseDataLake_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://synapsepocv4.dfs.core.windows.net"
+		},
+		"Dynamics1_properties_typeProperties_servicePrincipalId": {
+			"type": "string",
+			"defaultValue": "e95a24be-7a82-4b41-af27-9da8c40a969a"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDatabase')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('AzureSqlDatabase_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataverseDataLake')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('DataverseDataLake_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('DataverseDataLake_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Dynamics1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "Dynamics",
+				"typeProperties": {
+					"deploymentType": "Online",
+					"serviceUri": "https://cobaltuat39.crm.dynamics.com",
+					"authenticationType": "AADServicePrincipal",
+					"servicePrincipalCredentialType": "ServicePrincipalKey",
+					"servicePrincipalId": "[parameters('Dynamics1_properties_typeProperties_servicePrincipalId')]",
+					"servicePrincipalCredential": {
+						"type": "SecureString",
+						"value": "[parameters('Dynamics1_servicePrincipalCredential')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "The destination Azure SQL Table for the Dataverse data.",
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"SQLTableName": {
+						"type": "string",
+						"defaultValue": "\"SQL Table Name\""
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().SQLTableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "The destination Azure SQL Table for the Dataverse data.",
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"SQLTableName": {
+						"type": "string",
+						"defaultValue": "\"SQL Table Name\""
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().SQLTableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSqlDatabase')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataverseToAzureSQL')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Writes Dataverse data in Azure Data Lake Storage Gen2 to Azure SQL Database.",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"linkedService": {
+								"referenceName": "DataverseDataLake",
+								"type": "LinkedServiceReference"
+							},
+							"name": "ADLS"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlTable",
+								"type": "DatasetReference"
+							},
+							"name": "SQL"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AlterRow1"
+						}
+					],
+					"script": "parameters{\n\tContainerName as string (\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"),\n\tTableName as string (\"account\")\n}\nsource(output(\n\t\tId as string,\n\t\tSinkCreatedOn as timestamp,\n\t\tSinkModifiedOn as timestamp,\n\t\tstatecode as long,\n\t\tstatuscode as long,\n\t\taddress1_shippingmethodcode as long,\n\t\tnew_accreditationstatus as long,\n\t\tpreferredcontactmethodcode as long,\n\t\taccountcategorycode as long,\n\t\tcobalt_address1sameas as long,\n\t\taddress2_shippingmethodcode as long,\n\t\taddress1_freighttermscode as long,\n\t\tshippingmethodcode as long,\n\t\tpreferredappointmenttimecode as long,\n\t\taddress1_addresstypecode as long,\n\t\tbusinesstypecode as long,\n\t\taddress2_addresstypecode as long,\n\t\tcustomersizecode as long,\n\t\taddress2_freighttermscode as long,\n\t\tnew_boarddecision as long,\n\t\taccountratingcode as long,\n\t\tcobalt_address2sameas as long,\n\t\tterritorycode as long,\n\t\tcustomertypecode as long,\n\t\taccountclassificationcode as long,\n\t\tnew_programtype as long,\n\t\tindustrycode as long,\n\t\tpaymenttermscode as long,\n\t\tpreferredappointmentdaycode as long,\n\t\townershipcode as long,\n\t\tnew_remotesupervisedpractice as string,\n\t\tnew_alternateeducation as string,\n\t\tnew_otherprogramoptions as string,\n\t\tnew_degreegranted as string,\n\t\tmerged as boolean,\n\t\tnew_distanceeducation as boolean,\n\t\tdonotfax as boolean,\n\t\tfollowemail as boolean,\n\t\tnew_sitevisitscheduled as boolean,\n\t\tdonotemail as boolean,\n\t\tnew_programrepcommentsreceived as boolean,\n\t\tdonotpostalmail as boolean,\n\t\tisprivate as boolean,\n\t\tnew_draftreportreceived as boolean,\n\t\tnew_reportsenttoprogramrep as boolean,\n\t\tnew_reportsenttoteamandprogramrep as boolean,\n\t\tdonotbulkemail as boolean,\n\t\tdonotsendmm as boolean,\n\t\tnew_selfstudysubmitted as boolean,\n\t\tnew_consensusreportsent as boolean,\n\t\tdonotphone as boolean,\n\t\tcreditonhold as boolean,\n\t\tmarketingonly as boolean,\n\t\tdonotbulkpostalmail as boolean,\n\t\tparticipatesinworkflow as boolean,\n\t\tmsdyn_gdproptout as boolean,\n\t\tcobalt_address1_stateprovinceid as string,\n\t\tcobalt_address1_stateprovinceid_entitytype as string,\n\t\tcobalt_telephone1countryid as string,\n\t\tcobalt_telephone1countryid_entitytype as string,\n\t\tcobalt_faxcountryid as string,\n\t\tcobalt_faxcountryid_entitytype as string,\n\t\tparentaccountid as string,\n\t\tparentaccountid_entitytype as string,\n\t\tcobalt_manualbatchid as string,\n\t\tcobalt_manualbatchid_entitytype as string,\n\t\tcobalt_address2_countryid as string,\n\t\tcobalt_address2_countryid_entitytype as string,\n\t\tdefaultpricelevelid as string,\n\t\tdefaultpricelevelid_entitytype as string,\n\t\tslainvokedid as string,\n\t\tslainvokedid_entitytype as string,\n\t\tprimarycontactid as string,\n\t\tprimarycontactid_entitytype as string,\n\t\toriginatingleadid as string,\n\t\toriginatingleadid_entitytype as string,\n\t\tmodifiedonbehalfby as string,\n\t\tmodifiedonbehalfby_entitytype as string,\n\t\tcreatedby as string,\n\t\tcreatedby_entitytype as string,\n\t\tcobalt_accountupdateformresponseid as string,\n\t\tcobalt_accountupdateformresponseid_entitytype as string,\n\t\towningteam as string,\n\t\towningteam_entitytype as string,\n\t\tmodifiedbyexternalparty as string,\n\t\tmodifiedbyexternalparty_entitytype as string,\n\t\towningbusinessunit as string,\n\t\towningbusinessunit_entitytype as string,\n\t\ttransactioncurrencyid as string,\n\t\ttransactioncurrencyid_entitytype as string,\n\t\tmodifiedby as string,\n\t\tmodifiedby_entitytype as string,\n\t\tpreferredequipmentid as string,\n\t\tpreferredequipmentid_entitytype as string,\n\t\tpreferredsystemuserid as string,\n\t\tpreferredsystemuserid_entitytype as string,\n\t\tcobalt_address1_countryid as string,\n\t\tcobalt_address1_countryid_entitytype as string,\n\t\tpreferredserviceid as string,\n\t\tpreferredserviceid_entitytype as string,\n\t\tmasterid as string,\n\t\tmasterid_entitytype as string,\n\t\tcreatedonbehalfby as string,\n\t\tcreatedonbehalfby_entitytype as string,\n\t\tslaid as string,\n\t\tslaid_entitytype as string,\n\t\tcreatedbyexternalparty as string,\n\t\tcreatedbyexternalparty_entitytype as string,\n\t\tcobalt_address2_stateprovinceid as string,\n\t\tcobalt_address2_stateprovinceid_entitytype as string,\n\t\tterritoryid as string,\n\t\tterritoryid_entitytype as string,\n\t\towninguser as string,\n\t\towninguser_entitytype as string,\n\t\townerid as string,\n\t\townerid_entitytype as string,\n\t\taging60 as decimal(18,2),\n\t\tnew_tuitioncpdpdnonresidentdegree as decimal(18,2),\n\t\tnew_tuitioncpdpdresidentdegree_base as decimal(18,2),\n\t\tcreditlimit_base as decimal(18,2),\n\t\tnew_tuitioncpdpdnonresidentdegree_base as decimal(18,2),\n\t\trevenue_base as decimal(18,2),\n\t\tnew_tuitionnonresidentnondegreeft as decimal(18,2),\n\t\taging30_base as decimal(18,2),\n\t\trevenue as decimal(18,2),\n\t\taging30 as decimal(18,2),\n\t\tnew_tuitionnonresidentnondegreept as decimal(18,2),\n\t\topenrevenue_base as decimal(18,2),\n\t\tmarketcap as decimal(18,2),\n\t\tnew_tuitionresidentnondegreeft_base as decimal(18,2),\n\t\tnew_applicationfee_base as decimal(18,2),\n\t\tnew_tuitionnonresidentnondegreept_base as decimal(18,2),\n\t\tnew_tuitionresidentdegreeft_base as decimal(18,2),\n\t\tnew_tuitionresidentnondegreept_base as decimal(18,2),\n\t\tnew_tuitionnonresidentnondegreeft_base as decimal(18,2),\n\t\tnew_tuitionnonresidentdegreept as decimal(18,2),\n\t\tnew_tuitionresidentdegreept_base as decimal(18,2),\n\t\tmarketcap_base as decimal(18,2),\n\t\tnew_tuitionnonresidentdegreeft as decimal(18,2),\n\t\tcreditlimit as decimal(18,2),\n\t\tnew_tuitionresidentnondegreeft as decimal(18,2),\n\t\tnew_tuitionnonresidentdegreept_base as decimal(18,2),\n\t\tnew_tuitioncpdpdresidentdegree as decimal(18,2),\n\t\tnew_tuitionresidentnondegreept as decimal(18,2),\n\t\taging90_base as decimal(18,2),\n\t\taging60_base as decimal(18,2),\n\t\tnew_applicationfee as decimal(18,2),\n\t\tnew_tuitionresidentdegreeft as decimal(18,2),\n\t\tnew_housingcost_base as decimal(18,2),\n\t\tnew_housingcost as decimal(18,2),\n\t\topenrevenue as decimal(18,2),\n\t\tnew_tuitionnonresidentdegreeft_base as decimal(18,2),\n\t\tnew_tuitionresidentdegreept as decimal(18,2),\n\t\taging90 as decimal(18,2),\n\t\tnew_dpdyear4 as long,\n\t\toverriddencreatedon as timestamp,\n\t\tcreatedbyname as string,\n\t\tcreatedbyexternalpartyyominame as string,\n\t\taddress1_telephone3 as string,\n\t\tteamsfollowed as long,\n\t\taddress2_upszone as string,\n\t\tcreatedonbehalfbyyominame as string,\n\t\topenrevenue_state as long,\n\t\tterritoryidname as string,\n\t\taccountid as string,\n\t\taddress1_line3 as string,\n\t\taddress2_fax as string,\n\t\tcobalt_joindate as timestamp,\n\t\tnew_employmentrate as decimal(18,2),\n\t\tnew_employedtotalrollup_state as long,\n\t\tcreatedbyyominame as string,\n\t\taddress2_line3 as string,\n\t\tmodifiedonbehalfbyname as string,\n\t\tnew_enrollment as long,\n\t\taddress2_latitude as double,\n\t\tmodifiedbyexternalpartyname as string,\n\t\tfax as string,\n\t\texchangerate as decimal(18,2),\n\t\tnew_completedtotalrollup as long,\n\t\tmodifiedbyname as string,\n\t\ttransactioncurrencyidname as string,\n\t\taccountnumber as string,\n\t\tnew_completionrate as decimal(18,2),\n\t\taddress2_name as string,\n\t\towningbusinessunitname as string,\n\t\tnew_dpdspec as long,\n\t\tstockexchange as string,\n\t\tnew_graduates as long,\n\t\topendeals as long,\n\t\tnew_completedgradsrollup_date as timestamp,\n\t\taddress1_line1 as string,\n\t\taddress1_line2 as string,\n\t\tnew_concentrationareas as string,\n\t\tpreferredequipmentidname as string,\n\t\tcobalt_telephone1countryidname as string,\n\t\tnew_completedgradsrollup as long,\n\t\taddress2_line2 as string,\n\t\tmodifiedbyyominame as string,\n\t\tnew_staffreviewcomplete as timestamp,\n\t\taddress1_postalcode as string,\n\t\taddress2_city as string,\n\t\ttraversedpath as string,\n\t\taddress1_city as string,\n\t\tftpsiteurl as string,\n\t\taddress2_telephone2 as string,\n\t\tnew_maxenrollmentpostgrad as long,\n\t\tcobalt_address2_countryidname as string,\n\t\taddress1_county as string,\n\t\tprimarytwitterid as string,\n\t\tnew_dpdyear30 as long,\n\t\tdefaultpricelevelidname as string,\n\t\taddress2_postalcode as string,\n\t\temailaddress2 as string,\n\t\tnew_actualnondegreeft as long,\n\t\tentityimageid as string,\n\t\taddress2_telephone1 as string,\n\t\tcobalt_manualbatchidname as string,\n\t\taddress2_telephone3 as string,\n\t\tnew_studenttotal as long,\n\t\tcobalt_address2_stateprovinceidname as string,\n\t\taddress1_utcoffset as long,\n\t\tnew_applicantsnondegreept as long,\n\t\tutcconversiontimezonecode as long,\n\t\tnew_actualnondegreept as long,\n\t\tnew_employedgradsrollup as long,\n\t\tcobalt_faxcountryidname as string,\n\t\tnew_applicantsdegreeft as long,\n\t\tnew_employedtotal as long,\n\t\taddress1_primarycontactname as string,\n\t\tnew_sitevisitbegindate as timestamp,\n\t\tcreatedon as timestamp,\n\t\tnew_applicantsdegreept as long,\n\t\tnew_maxenrollmentyear1ms as long,\n\t\taddress1_longitude as double,\n\t\tyominame as string,\n\t\ttelephone2 as string,\n\t\taddress2_longitude as double,\n\t\tnew_completedtotalrollup_date as timestamp,\n\t\twebsiteurl as string,\n\t\tnew_employedgrads as long,\n\t\tnew_completedtotalrollup_state as long,\n\t\temailaddress3 as string,\n\t\tprimarycontactidyominame as string,\n\t\tnew_maxenrollmentyear1bs as long,\n\t\towneridtype as string,\n\t\tnew_cpdpdyear1 as long,\n\t\tpreferredsystemuseridname as string,\n\t\tonholdtime as long,\n\t\tsic as string,\n\t\tname as string,\n\t\tdescription as string,\n\t\taddress2_primarycontactname as string,\n\t\tnew_originalaccreditationdate as timestamp,\n\t\taddress2_line1 as string,\n\t\tpreferredsystemuseridyominame as string,\n\t\tcreatedonbehalfbyname as string,\n\t\tsharesoutstanding as long,\n\t\taddress2_postofficebox as string,\n\t\tnew_feesreceived as timestamp,\n\t\taddress1_country as string,\n\t\topendeals_state as long,\n\t\tprocessid as string,\n\t\taddress2_addressid as string,\n\t\tnew_maxenrollmentyear2ms as long,\n\t\tnew_maxenrollmentyear2bs as long,\n\t\tnew_employedtotalrollup as long,\n\t\tnew_sponsoraccreditororrecognitionbody as string,\n\t\tcobalt_accountupdateformresponseidname as string,\n\t\tslaname as string,\n\t\tnew_otherprogramoptionsdetails as string,\n\t\tentityimage_timestamp as long,\n\t\tmodifiedon as timestamp,\n\t\taddress2_country as string,\n\t\tnew_sitevisitenddate as timestamp,\n\t\tcobalt_address1_countryidname as string,\n\t\tversionnumber as long,\n\t\tnew_cpdtyear1 as long,\n\t\tnew_cpdtyear2 as long,\n\t\taddress1_composite as string,\n\t\tpreferredserviceidname as string,\n\t\temailaddress1 as string,\n\t\tnew_cpdtspec as long,\n\t\tnew_actualdegreept as long,\n\t\taddress1_upszone as string,\n\t\towneridname as string,\n\t\tnew_employedtotalrollup_date as timestamp,\n\t\topendeals_date as timestamp,\n\t\tnew_otherinformation as string,\n\t\tnew_actualdegreeft as long,\n\t\ttimezoneruleversionnumber as long,\n\t\tnew_applicantsnondegreeft as long,\n\t\tnew_actualtotal as long,\n\t\taddress1_stateorprovince as string,\n\t\taddress2_utcoffset as long,\n\t\tnew_totalapplicants as long,\n\t\tlastusedincampaign as timestamp,\n\t\tnew_employedgradsrollup_date as timestamp,\n\t\tnew_demofield as string,\n\t\taddress1_postofficebox as string,\n\t\tnew_cpdpdyear2 as long,\n\t\tprimarycontactidname as string,\n\t\taddress1_telephone2 as string,\n\t\tnew_employedgradsrollup_state as long,\n\t\ttelephone1 as string,\n\t\tmasteraccountidname as string,\n\t\tparentaccountidyominame as string,\n\t\tnew_accreditationtermends as timestamp,\n\t\taddress1_addressid as string,\n\t\tparentaccountidname as string,\n\t\tnew_completedgrads as long,\n\t\toriginatingleadidname as string,\n\t\tnew_dpdyear3 as long,\n\t\taddress1_latitude as double,\n\t\taddress2_composite as string,\n\t\tcobalt_customernumber as string,\n\t\taddress1_telephone1 as string,\n\t\tnew_meharsfield as string,\n\t\taddress2_county as string,\n\t\tstageid as string,\n\t\tentityimage_url as string,\n\t\tmodifiedonbehalfbyyominame as string,\n\t\tnew_reportsenttoprogram as timestamp,\n\t\tlastonholdtime as timestamp,\n\t\taddress1_name as string,\n\t\tnew_completedtotal as long,\n\t\taddress2_stateorprovince as string,\n\t\ttimespentbymeonemailandmeetings as string,\n\t\tnumberofemployees as long,\n\t\timportsequencenumber as long,\n\t\ttickersymbol as string,\n\t\topenrevenue_date as timestamp,\n\t\tcobalt_address1_stateprovinceidname as string,\n\t\taddress1_fax as string,\n\t\ttelephone3 as string,\n\t\tmasteraccountidyominame as string,\n\t\tnew_completedgradsrollup_state as long,\n\t\tcreatedbyexternalpartyname as string,\n\t\tmodifiedbyexternalpartyyominame as string,\n\t\tslainvokedidname as string,\n\t\tnew_year as long,\n\t\tprimarysatoriid as string,\n\t\towneridyominame as string,\n\t\toriginatingleadidyominame as string\n\t),\n\tallowSchemaDrift: false,\n\tvalidateSchema: true,\n\tignoreNoFilesFound: false,\n\tenableCdc: true,\n\tmode: 'read',\n\tentity: ($TableName),\n\tformat: 'cdm',\n\tmanifestType: 'model',\n\tfolderPath: '',\n\tfileSystem: ($ContainerName),\n\tdateFormats: ['MM/dd/yyyy'],\n\ttimestampFormats: ['MM/dd/yyyy hh:mm:ss a'],\n\tpreferredIntegralType: 'long',\n\tpreferredFractionalType: 'float') ~> ADLS\nADLS alterRow(upsertIf(true())) ~> AlterRow1\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:['Id'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> SQL"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataverseDataLake')]",
+				"[concat(variables('factoryId'), '/datasets/AzureSqlTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataverseToAzureSQL1')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Writes Dataverse data in Azure Data Lake Storage Gen2 to Azure SQL Database.",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"linkedService": {
+								"referenceName": "DataverseDataLake",
+								"type": "LinkedServiceReference"
+							},
+							"name": "ADLS"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlTable1",
+								"type": "DatasetReference"
+							},
+							"name": "SQL"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AlterRow1"
+						}
+					],
+					"script": "parameters{\n\tContainerName as string (\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"),\n\tTableName as string (\"product\")\n}\nsource(output(\n\t\tId as string,\n\t\tSinkCreatedOn as timestamp,\n\t\tSinkModifiedOn as timestamp,\n\t\tstatecode as long,\n\t\tstatuscode as long,\n\t\tproductstructure as long,\n\t\tproducttypecode as long,\n\t\tcobalt_category as long,\n\t\tcobalt_publishtoportal as boolean,\n\t\tcobalt_shippable as boolean,\n\t\tiskit as boolean,\n\t\tisstockitem as boolean,\n\t\tmsdyn_gdproptout as boolean,\n\t\tcobalt_preventbackorder as boolean,\n\t\tcobalt_taxable as boolean,\n\t\tisreparented as boolean,\n\t\tpricelevelid as string,\n\t\tpricelevelid_entitytype as string,\n\t\tparentproductid as string,\n\t\tparentproductid_entitytype as string,\n\t\ttransactioncurrencyid as string,\n\t\ttransactioncurrencyid_entitytype as string,\n\t\tdefaultuomscheduleid as string,\n\t\tdefaultuomscheduleid_entitytype as string,\n\t\tmodifiedbyexternalparty as string,\n\t\tmodifiedbyexternalparty_entitytype as string,\n\t\tcreatedonbehalfby as string,\n\t\tcreatedonbehalfby_entitytype as string,\n\t\tmodifiedonbehalfby as string,\n\t\tmodifiedonbehalfby_entitytype as string,\n\t\tcreatedbyexternalparty as string,\n\t\tcreatedbyexternalparty_entitytype as string,\n\t\tdefaultuomid as string,\n\t\tdefaultuomid_entitytype as string,\n\t\tmodifiedby as string,\n\t\tmodifiedby_entitytype as string,\n\t\tsubjectid as string,\n\t\tsubjectid_entitytype as string,\n\t\tcreatedby as string,\n\t\tcreatedby_entitytype as string,\n\t\tcobalt_taxtableid as string,\n\t\tcobalt_taxtableid_entitytype as string,\n\t\torganizationid as string,\n\t\torganizationid_entitytype as string,\n\t\tcurrentcost_base as decimal(18,2),\n\t\tstandardcost as decimal(18,2),\n\t\tcurrentcost as decimal(18,2),\n\t\tstandardcost_base as decimal(18,2),\n\t\tprice as decimal(18,2),\n\t\tprice_base as decimal(18,2),\n\t\ttimezoneruleversionnumber as long,\n\t\tproducturl as string,\n\t\tcobalt_remittanceapplicationorder as long,\n\t\tvendorid as string,\n\t\tquantityonhand as decimal(18,2),\n\t\tstageid as string,\n\t\tcreatedbyname as string,\n\t\tcreatedonbehalfbyyominame as string,\n\t\tmodifiedon as timestamp,\n\t\ttraversedpath as string,\n\t\tcreatedbyexternalpartyname as string,\n\t\tstockvolume as decimal(18,2),\n\t\tmodifiedbyyominame as string,\n\t\tdefaultuomidname as string,\n\t\tvalidfromdate as timestamp,\n\t\tmodifiedonbehalfbyyominame as string,\n\t\tprocessid as string,\n\t\tcobalt_taxtableidname as string,\n\t\tpricelevelidname as string,\n\t\tvalidtodate as timestamp,\n\t\tmodifiedonbehalfbyname as string,\n\t\tproductnumber as string,\n\t\thierarchypath as string,\n\t\tsubjectidname as string,\n\t\tproductid as string,\n\t\tname as string,\n\t\timportsequencenumber as long,\n\t\tmodifiedbyexternalpartyyominame as string,\n\t\tentityimage_url as string,\n\t\tutcconversiontimezonecode as long,\n\t\tmodifiedbyname as string,\n\t\tentityimage_timestamp as long,\n\t\torganizationidname as string,\n\t\tdefaultuomscheduleidname as string,\n\t\tvendorpartnumber as string,\n\t\toverriddencreatedon as timestamp,\n\t\texchangerate as decimal(18,2),\n\t\tcobalt_minquantity as long,\n\t\tcreatedbyyominame as string,\n\t\tcreatedbyexternalpartyyominame as string,\n\t\tcreatedon as timestamp,\n\t\tversionnumber as long,\n\t\tsuppliername as string,\n\t\tstockweight as decimal(18,2),\n\t\tdescription as string,\n\t\tparentproductidname as string,\n\t\tquantitydecimal as long,\n\t\tdmtimportstate as long,\n\t\ttransactioncurrencyidname as string,\n\t\tmodifiedbyexternalpartyname as string,\n\t\tsize as string,\n\t\tentityimageid as string,\n\t\tvendorname as string,\n\t\tcreatedonbehalfbyname as string\n\t),\n\tallowSchemaDrift: false,\n\tvalidateSchema: true,\n\tignoreNoFilesFound: false,\n\tenableCdc: true,\n\tmode: 'read',\n\tentity: ($TableName),\n\tformat: 'cdm',\n\tmanifestType: 'model',\n\tfolderPath: '',\n\tfileSystem: ($ContainerName),\n\tdateFormats: ['MM/dd/yyyy'],\n\ttimestampFormats: ['MM/dd/yyyy hh:mm:ss a'],\n\tpreferredIntegralType: 'long',\n\tpreferredFractionalType: 'float') ~> ADLS\nADLS alterRow(upsertIf(true())) ~> AlterRow1\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:['Id'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> SQL"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/DataverseDataLake')]",
+				"[concat(variables('factoryId'), '/datasets/AzureSqlTable1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ADLS to ASQL - product')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "After using Azure Synapse Link for Dataverse, use this template to copy the Dataverse data from Azure Data Lake to Azure SQL.",
+				"activities": [
+					{
+						"name": "Dataverse mapping to Azure SQL",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataverseToAzureSQL1",
+								"type": "DataFlowReference",
+								"parameters": {
+									"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
+									"TableName": {
+										"value": "'@{\"product\"}'",
+										"type": "Expression"
+									}
+								},
+								"datasetParameters": {
+									"ADLS": {},
+									"SQL": {
+										"SQLTableName": "product"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine",
+							"continuationSettings": {
+								"customizedCheckpointKey": "1dcf3e8a-fa4d-459b-a4b4-63fb1f63eafb"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-03-29T19:35:34Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataverseToAzureSQL1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Copy Dataverse data from Azure Data Lake to Azure SQL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "After using Azure Synapse Link for Dataverse, use this template to copy the Dataverse data from Azure Data Lake to Azure SQL.",
+				"activities": [
+					{
+						"name": "Dataverse mapping to Azure SQL",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataverseToAzureSQL",
+								"type": "DataFlowReference",
+								"parameters": {
+									"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
+									"TableName": "\"account\""
+								},
+								"datasetParameters": {
+									"ADLS": {},
+									"SQL": {
+										"SQLTableName": "account"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine",
+							"continuationSettings": {
+								"customizedCheckpointKey": "4ce33ca9-53ac-4b55-8988-c81e9a978b17"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-03-29T19:35:34Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataverseToAzureSQL')]"
+			]
+		}
+	]
+}
