@@ -21,7 +21,10 @@
 						"type": "DataFlowReference",
 						"parameters": {
 							"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
-							"TableName": "\"account\""
+							"TableName": {
+								"value": "'@{\"product\"}'",
+								"type": "Expression"
+							}
 						},
 						"datasetParameters": {
 							"SQL": {
@@ -35,7 +38,7 @@
 					},
 					"traceLevel": "Fine",
 					"continuationSettings": {
-						"customizedCheckpointKey": "8d02f17a-8e19-422b-94de-b046a916a8cc"
+						"customizedCheckpointKey": "1dcf3e8a-fa4d-459b-a4b4-63fb1f63eafb"
 					}
 				}
 			}
