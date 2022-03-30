@@ -25,7 +25,10 @@
 						},
 						"datasetParameters": {
 							"SQL": {
-								"SQLTableName": "product"
+								"SQLTableName": {
+									"value": "product",
+									"type": "Expression"
+								}
 							}
 						}
 					},
