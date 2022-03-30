@@ -1,0 +1,49 @@
+{
+	"name": "ADLS to ASQL - product",
+	"properties": {
+		"description": "After using Azure Synapse Link for Dataverse, use this template to copy the Dataverse data from Azure Data Lake to Azure SQL.",
+		"activities": [
+			{
+				"name": "Dataverse mapping to Azure SQL",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DataverseToAzureSQL1",
+						"type": "DataFlowReference",
+						"parameters": {
+							"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
+							"TableName": {
+								"value": "'@{\"product\"}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"SQL": {
+								"SQLTableName": "product"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine",
+					"continuationSettings": {
+						"customizedCheckpointKey": "1dcf3e8a-fa4d-459b-a4b4-63fb1f63eafb"
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2022-03-29T19:35:34Z"
+	}
+}
