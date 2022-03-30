@@ -248,17 +248,18 @@
 								"type": "DataFlowReference",
 								"parameters": {
 									"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
-									"TableName": {
-										"value": "'@{\"product\"}'",
-										"type": "Expression"
-									}
+									"TableName": "\"product\""
 								},
 								"datasetParameters": {
 									"ADLS": {},
 									"SQL": {
-										"SQLTableName": "product"
+										"SQLTableName": {
+											"value": "product",
+											"type": "Expression"
+										}
 									}
-								}
+								},
+								"linkedServiceParameters": {}
 							},
 							"staging": {},
 							"compute": {
@@ -324,7 +325,7 @@
 							},
 							"traceLevel": "Fine",
 							"continuationSettings": {
-								"customizedCheckpointKey": "4ce33ca9-53ac-4b55-8988-c81e9a978b17"
+								"customizedCheckpointKey": "9c938b80-154e-4808-b7e8-3128f0847ce9"
 							}
 						}
 					}
