@@ -21,10 +21,7 @@
 						"type": "DataFlowReference",
 						"parameters": {
 							"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
-							"TableName": {
-								"value": "'@{\"product\"}'",
-								"type": "Expression"
-							}
+							"TableName": "\"product\""
 						},
 						"datasetParameters": {
 							"SQL": {
