@@ -1,0 +1,9 @@
+{
+	"name": "synapsepocdatafactory",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "6f3989ae-3002-43dd-b1ec-97bbeecd643d",
+		"tenantId": "e753fca2-ad7e-49cc-9b96-8b9710cd628f"
+	}
+}
