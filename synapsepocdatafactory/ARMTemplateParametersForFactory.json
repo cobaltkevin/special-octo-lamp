@@ -19,6 +19,9 @@
 		},
 		"Dynamics1_properties_typeProperties_servicePrincipalId": {
 			"value": "e95a24be-7a82-4b41-af27-9da8c40a969a"
+		},
+		"On blob creation_properties_typeProperties_scope": {
+			"value": "/subscriptions/2b3c2705-0dd0-450a-9fc2-57a9500be415/resourceGroups/Xperiment/providers/Microsoft.Storage/storageAccounts/synapsepocv4"
 		}
 	}
 }
