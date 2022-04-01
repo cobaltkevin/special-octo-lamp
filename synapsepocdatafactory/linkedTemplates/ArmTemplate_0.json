@@ -228,66 +228,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/ADLS to ASQL - product')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "After using Azure Synapse Link for Dataverse, use this template to copy the Dataverse data from Azure Data Lake to Azure SQL.",
-				"activities": [
-					{
-						"name": "Dataverse mapping to Azure SQL",
-						"type": "ExecuteDataFlow",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "1.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataflow": {
-								"referenceName": "DataverseToAzureSQL1",
-								"type": "DataFlowReference",
-								"parameters": {
-									"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
-									"TableName": "\"product\""
-								},
-								"datasetParameters": {
-									"ADLS": {},
-									"SQL": {
-										"SQLTableName": {
-											"value": "product",
-											"type": "Expression"
-										}
-									}
-								}
-							},
-							"staging": {},
-							"compute": {
-								"coreCount": 8,
-								"computeType": "General"
-							},
-							"traceLevel": "Fine",
-							"continuationSettings": {
-								"customizedCheckpointKey": "1dcf3e8a-fa4d-459b-a4b4-63fb1f63eafb"
-							}
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"annotations": [],
-				"lastPublishTime": "2022-03-29T19:35:34Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/dataflows/DataverseToAzureSQL1')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/ADLS to ASQL - all entities')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -336,8 +276,7 @@
 														"type": "Expression"
 													}
 												}
-											},
-											"linkedServiceParameters": {}
+											}
 										},
 										"staging": {},
 										"compute": {
@@ -465,12 +404,72 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/ADLS to ASQL - product')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "After using Azure Synapse Link for Dataverse, use this template to copy the Dataverse data from Azure Data Lake to Azure SQL.",
+				"activities": [
+					{
+						"name": "Dataverse mapping to Azure SQL",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataverseToAzureSQL1",
+								"type": "DataFlowReference",
+								"parameters": {
+									"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
+									"TableName": "\"product\""
+								},
+								"datasetParameters": {
+									"ADLS": {},
+									"SQL": {
+										"SQLTableName": {
+											"value": "product",
+											"type": "Expression"
+										}
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine",
+							"continuationSettings": {
+								"customizedCheckpointKey": "1dcf3e8a-fa4d-459b-a4b4-63fb1f63eafb"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-03-29T19:35:34Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataverseToAzureSQL1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/On blob creation')]",
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
-				"runtimeState": "Stopped",
+				"runtimeState": "Started",
 				"pipelines": [
 					{
 						"pipelineReference": {
@@ -488,6 +487,37 @@
 					"events": [
 						"Microsoft.Storage.BlobCreated"
 					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/ADLS to ASQL - product')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/every hour')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "ADLS to ASQL - product",
+						"type": "PipelineReference"
+					},
+					"parameters": {}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Hour",
+					"interval": 1,
+					"startTime": "2022-04-01T13:13:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 50,
+					"retryPolicy": {
+						"intervalInSeconds": 30
+					},
+					"dependsOn": []
 				}
 			},
 			"dependsOn": [
