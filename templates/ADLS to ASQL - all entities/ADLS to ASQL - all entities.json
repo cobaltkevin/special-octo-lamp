@@ -1,0 +1,258 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name"
+		},
+		"DataverseDataLake": {
+			"type": "string"
+		},
+		"AzureSqlDatabase": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ADLS to ASQL - all entities')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "After using Azure Synapse Link for Dataverse, use this template to copy the Dataverse data from Azure Data Lake to Azure SQL.",
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@variables('EntityNames')",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "DataverseToAzureSQL",
+									"type": "ExecuteDataFlow",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "1.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"dataflow": {
+											"referenceName": "DataverseToAzureSQL",
+											"type": "DataFlowReference",
+											"parameters": {
+												"ContainerName": "\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"",
+												"TableName": {
+													"value": "'@{item()}'",
+													"type": "Expression"
+												}
+											},
+											"datasetParameters": {
+												"SQL": {
+													"SQLTableName": {
+														"value": "@item()",
+														"type": "Expression"
+													}
+												}
+											}
+										},
+										"compute": {
+											"coreCount": 8,
+											"computeType": "General"
+										},
+										"traceLevel": "Fine",
+										"continuationSettings": {
+											"customizedCheckpointKey": "6151b337-b84f-487d-8b5b-a2df8d81a325"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"EntityNames": {
+						"type": "Array",
+						"defaultValue": [
+							"cdm",
+							"account",
+							"cobalt_accountdomain",
+							"cobalt_accountingexport",
+							"cobalt_accountingexportfiletransformation",
+							"cobalt_accountingintegrationbatch",
+							"cobalt_accountingintegrationbatchitem",
+							"cobalt_accountportalrole",
+							"cobalt_alert",
+							"cobalt_answer",
+							"cobalt_award",
+							"cobalt_batchdefinition",
+							"cobalt_certification",
+							"cobalt_certificationtype",
+							"cobalt_class",
+							"cobalt_classinstructor",
+							"cobalt_classlocation",
+							"cobalt_classregistration",
+							"cobalt_classregistrationfee",
+							"cobalt_cmsuserattribute",
+							"cobalt_cmsuseridentitydefinition",
+							"cobalt_cmsuserrole",
+							"cobalt_cobalt_classinstructor_cobalt_class",
+							"cobalt_cobalt_initialcertificationrequirement_",
+							"cobalt_cobalt_tag_cobalt_class",
+							"cobalt_cobalt_tag_cobalt_course",
+							"cobalt_cobalt_tag_cobalt_meeting",
+							"cobalt_cobalt_tag_product",
+							"cobalt_contactaffiliation",
+							"cobalt_country",
+							"cobalt_coupon",
+							"cobalt_couponredemption",
+							"cobalt_course",
+							"cobalt_courseprovider",
+							"cobalt_credit",
+							"cobalt_cronjob",
+							"cobalt_cronschedule",
+							"cobalt_documenttemplate",
+							"cobalt_election",
+							"cobalt_electionrequirement",
+							"cobalt_electionrequirementtype",
+							"cobalt_engagementactivitytype",
+							"cobalt_event",
+							"cobalt_eventdocument",
+							"cobalt_eventdocument_class",
+							"cobalt_eventdocument_meeting",
+							"cobalt_generalledgeraccount",
+							"cobalt_generalledgeraccountcategory",
+							"cobalt_initialcertapptype",
+							"cobalt_initialcertfee_secondaryproduct",
+							"cobalt_initialcertificationfee",
+							"cobalt_initialcertificationrequirement",
+							"cobalt_meeting",
+							"cobalt_meetingactivity",
+							"cobalt_meetingactivityregfee",
+							"cobalt_meetingactivityspeaker",
+							"cobalt_meetingbooth",
+							"cobalt_meetingcancelationfee",
+							"cobalt_meetingcancelationfee_meetingregfee",
+							"cobalt_meetingcancelfee_meetingactivityregfee",
+							"cobalt_meetingcompanionregistration",
+							"cobalt_meetingexhibitor",
+							"cobalt_meetingregistrationactivity",
+							"cobalt_meetingregistrationfee",
+							"cobalt_page",
+							"cobalt_pagetext",
+							"cobalt_productgeneralledgeraccount",
+							"cobalt_publication",
+							"cobalt_publicationfee",
+							"cobalt_question",
+							"cobalt_questionlogic",
+							"cobalt_questionmapping",
+							"cobalt_questionmappingstep",
+							"cobalt_registration",
+							"cobalt_section",
+							"cobalt_stateprovince",
+							"cobalt_tag",
+							"cobalt_vote",
+							"cobalt_voterscorequestion",
+							"cobalt_votingscore",
+							"cobalt_webelement",
+							"cobalt_webelementfee",
+							"cobalt_webelementrequirement",
+							"cobalt_webelementtype",
+							"product",
+							"productpricelevel",
+							"savedquery",
+							"template",
+							"transactioncurrency",
+							"uom",
+							"uomschedule",
+							"workflow"
+						]
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2022-03-29T19:35:34Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataverseToAzureSQL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataverseToAzureSQL')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Writes Dataverse data in Azure Data Lake Storage Gen2 to Azure SQL Database.",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"linkedService": {
+								"referenceName": "[parameters('DataverseDataLake')]",
+								"type": "LinkedServiceReference"
+							},
+							"name": "ADLS"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "AzureSqlTable",
+								"type": "DatasetReference"
+							},
+							"name": "SQL"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AlterRow1"
+						}
+					],
+					"script": "parameters{\n\tContainerName as string (\"dataverse-cobaltuat39-unq99abf791fa9c46899cc41db6b6038\"),\n\tTableName as string (\"account\")\n}\nsource(allowSchemaDrift: true,\n\tvalidateSchema: true,\n\tinferDriftedColumnTypes: true,\n\tignoreNoFilesFound: false,\n\tenableCdc: true,\n\tmode: 'read',\n\tentity: ($TableName),\n\tformat: 'cdm',\n\tmanifestType: 'model',\n\tfolderPath: '',\n\tfileSystem: ($ContainerName),\n\tdateFormats: ['MM/dd/yyyy'],\n\ttimestampFormats: ['MM/dd/yyyy hh:mm:ss a'],\n\tpreferredIntegralType: 'long',\n\tpreferredFractionalType: 'float') ~> ADLS\nADLS alterRow(upsertIf(true())) ~> AlterRow1\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:[(\"Id\")],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> SQL"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/AzureSqlTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "The destination Azure SQL Table for the Dataverse data.",
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase')]",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"SQLTableName": {
+						"type": "string",
+						"defaultValue": "\"SQL Table Name\""
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().SQLTableName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
